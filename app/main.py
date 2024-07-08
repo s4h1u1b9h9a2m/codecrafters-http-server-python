@@ -1,5 +1,9 @@
 # Uncomment this to pass the first stage
 import socket
+import os
+from argparse import ArgumentParser
+
+FILE_DIR = None
 
 def fetch_request(connection):
     buffer_length = 1024
@@ -77,6 +81,21 @@ def process_connection(connection):
             'Content-Length': len(response_body)
         }
         connection.sendall(generate_response(200, response_header, response_body))
+    elif method == 'GET' and path.startswith('/files/'):
+        response_body = path[7:]
+        file_path = os.path.join(FILE_DIR, response_body)
+        
+        if os.path.isfile(file_path):
+            file = open(file_path, 'r')
+            file_content = file.read()
+            response_header = {
+                'Content-Type': 'application/octet-stream',
+                'Content-Length': len(file_content)
+            }
+            connection.sendall(generate_response(200, response_header, file_content))
+        else:
+            connection.sendall(generate_response(404))
+            
     elif method == 'GET' and path == '/user-agent':
         response_body = headers.get('User-Agent')
         response_header = {
@@ -92,6 +111,16 @@ def process_connection(connection):
 def main():
     # You can use print statements as follows for debugging, they'll be visible when running tests.
     print("Logs from your program will appear here!")
+
+    parser = ArgumentParser()
+    parser.add_argument("-d", "--directory", dest="directory",
+                        help="File Directory", metavar="DIRECTORY")
+    args = parser.parse_args()
+
+    if args.directory:
+        print(f"File Directory: {args.directory}")
+        globals()["FILE_DIR"] = args.directory
+
 
     # Uncomment this to pass the first stage
     
