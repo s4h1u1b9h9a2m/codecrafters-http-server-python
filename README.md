@@ -36,3 +36,15 @@ Note: This section is for stages 2 and beyond.
    `app/main.py`.
 1. Commit your changes and run `git push origin master` to submit your solution
    to CodeCrafters. Test output will be streamed to your terminal.
+
+
+## Make sure you're using your id
+```
+git config user.name "s4h1u1b9h9a2m"
+```
+
+## For windows, test in Docker
+```
+docker build -t http-server-python-test .
+docker run -it --rm -p 4221:4221 http-server-python-test
+```
