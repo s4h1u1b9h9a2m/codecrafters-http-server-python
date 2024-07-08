@@ -30,11 +30,17 @@ def parse_request(request_data):
 
     print("method and path:", method, path)
 
+    headers = lines[1:]
+
+    headers = dict(line.decode('utf-8').split(': ') for line in headers)
+
+    print("headers:", headers) 
+
     body = request_data[header_end + 4:]
 
     print("body:", body)
 
-    return method, path, body
+    return method, path, headers, body
 
 def generate_response(status = 200, headers = None, body = None):
     if headers is None:
@@ -57,7 +63,7 @@ def generate_response(status = 200, headers = None, body = None):
 def process_connection(connection):
     request_data = fetch_request(connection)
 
-    method, path, _ = parse_request(request_data)
+    method, path, headers, _ = parse_request(request_data)
 
     if not method or not path:
         return
@@ -66,6 +72,13 @@ def process_connection(connection):
         connection.sendall(generate_response(200))
     elif method == 'GET' and path.startswith('/echo/'):
         response_body = path[6:]
+        response_header = {
+            'Content-Type': 'text/plain',
+            'Content-Length': len(response_body)
+        }
+        connection.sendall(generate_response(200, response_header, response_body))
+    elif method == 'GET' and path == '/user-agent':
+        response_body = headers.get('User-Agent')
         response_header = {
             'Content-Type': 'text/plain',
             'Content-Length': len(response_body)
