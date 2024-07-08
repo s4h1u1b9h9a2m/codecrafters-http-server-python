@@ -64,6 +64,13 @@ def process_connection(connection):
 
     if method == 'GET' and path == '/':
         connection.sendall(generate_response(200))
+    elif method == 'GET' and path.startswith('/echo/'):
+        response_body = path[6:]
+        response_header = {
+            'Content-Type': 'text/plain',
+            'Content-Length': len(response_body)
+        }
+        connection.sendall(generate_response(200, response_header, response_body))
     else:
         connection.sendall(generate_response(404))
 
