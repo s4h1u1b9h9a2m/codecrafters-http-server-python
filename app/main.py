@@ -61,13 +61,15 @@ def generate_response(status = 200, headers = None, body = None):
         status_ = "404 Not Found"
     elif status == 500:
         status_ = "500 Internal Server Error"
+    elif status == 201:
+        status_ = "201 Created"
 
     return f"HTTP/1.1 {status_}\r\n{headers_string}\r\n\r\n{body}".encode('utf-8')
 
 def process_connection(connection):
     request_data = fetch_request(connection)
 
-    method, path, headers, _ = parse_request(request_data)
+    method, path, headers, body = parse_request(request_data)
 
     if not method or not path:
         return
@@ -95,7 +97,14 @@ def process_connection(connection):
             connection.sendall(generate_response(200, response_header, file_content))
         else:
             connection.sendall(generate_response(404))
-            
+    elif method == 'POST' and path.startswith('/files/'):
+        response_body = path[7:]
+        file_path = os.path.join(FILE_DIR, response_body)
+        
+        file = open(file_path, 'w')
+        file.write(body.decode('utf-8'))
+        file.close()
+        connection.sendall(generate_response(201))
     elif method == 'GET' and path == '/user-agent':
         response_body = headers.get('User-Agent')
         response_header = {
