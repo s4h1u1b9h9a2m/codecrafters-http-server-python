@@ -96,9 +96,10 @@ def main():
     # Uncomment this to pass the first stage
     
     server_socket = socket.create_server(("0.0.0.0", 4221), reuse_port=True)
-    connection, _ = server_socket.accept() # wait for client
 
-    process_connection(connection)
+    while True:
+        connection, _ = server_socket.accept() # wait for client
+        process_connection(connection)
 
 if __name__ == "__main__":
     main()
