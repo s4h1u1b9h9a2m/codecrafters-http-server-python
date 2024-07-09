@@ -21,6 +21,11 @@ def fetch_request(connection):
 
     return data
 
+def select_valid_encoding(encodings):
+    for encoding in encodings:
+        if encoding.strip() == 'gzip':
+            return encoding.strip()
+
 def parse_request(request_data):
     header_end = request_data.find(b'\r\n\r\n')
 
@@ -42,6 +47,8 @@ def parse_request(request_data):
     print("headers:", headers) 
 
     encoding = headers.get('Accept-Encoding')
+    if encoding:
+        encoding = select_valid_encoding(encoding.split(","))
     print("encoding:", encoding)
 
     body = request_data[header_end + 4:]
