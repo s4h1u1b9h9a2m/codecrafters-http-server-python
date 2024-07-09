@@ -62,7 +62,9 @@ def generate_response(status = 200, headers = None, body = None):
         headers = {}
 
     if body is None:
-        body = ""
+        body = b""
+    elif headers.get('Content-Encoding') != 'gzip':
+        body = body.encode()
 
     headers_string = "\r\n".join([f"{key}: {value}" for key, value in headers.items()])
 
@@ -75,7 +77,7 @@ def generate_response(status = 200, headers = None, body = None):
     elif status == 201:
         status_ = "201 Created"
 
-    return f"HTTP/1.1 {status_}\r\n{headers_string}\r\n\r\n{body}".encode('utf-8')
+    return f"HTTP/1.1 {status_}\r\n{headers_string}\r\n\r\n".encode('utf-8') + body
 
 def process_connection(connection):
     request_data = fetch_request(connection)
@@ -90,13 +92,16 @@ def process_connection(connection):
     elif method == 'GET' and path.startswith('/echo/'):
         response_body = path[6:]
         response_header = {
-            'Content-Type': 'text/plain',
-            'Content-Length': len(response_body)
+            'Content-Type': 'text/plain'
         }
 
+        print('decoded response', response_body)
         if encoding == 'gzip':
             response_header['Content-Encoding'] = 'gzip'
             response_body = gzip.compress(response_body.encode('utf-8'))
+            
+        print('encoded response', response_body)
+        response_header['Content-Length'] = len(response_body)
 
         connection.sendall(generate_response(200, response_header, response_body))
     elif method == 'GET' and path.startswith('/files/'):
@@ -107,14 +112,14 @@ def process_connection(connection):
             file = open(file_path, 'r')
             file_content = file.read()
             response_header = {
-                'Content-Type': 'application/octet-stream',
-                'Content-Length': len(file_content)
+                'Content-Type': 'application/octet-stream'
             }
 
             if encoding == 'gzip':
                 response_header['Content-Encoding'] = 'gzip'
-                response_body = gzip.compress(response_body.encode('utf-8'))
+                file_content = gzip.compress(file_content.encode('utf-8'))
 
+            response_header['Content-Length'] = len(file_content)
             connection.sendall(generate_response(200, response_header, file_content))
         else:
             connection.sendall(generate_response(404))
@@ -129,14 +134,14 @@ def process_connection(connection):
     elif method == 'GET' and path == '/user-agent':
         response_body = headers.get('User-Agent')
         response_header = {
-            'Content-Type': 'text/plain',
-            'Content-Length': len(response_body)
+            'Content-Type': 'text/plain'
         }
 
         if encoding == 'gzip':
             response_header['Content-Encoding'] = 'gzip'
             response_body = gzip.compress(response_body.encode('utf-8'))
 
+        response_header['Content-Length'] = len(response_body)
         connection.sendall(generate_response(200, response_header, response_body))
     else:
         connection.sendall(generate_response(404))
