@@ -110,6 +110,11 @@ def process_connection(connection):
                 'Content-Type': 'application/octet-stream',
                 'Content-Length': len(file_content)
             }
+
+            if encoding == 'gzip':
+                response_header['Content-Encoding'] = 'gzip'
+                response_body = gzip.compress(response_body.encode('utf-8'))
+
             connection.sendall(generate_response(200, response_header, file_content))
         else:
             connection.sendall(generate_response(404))
@@ -127,6 +132,11 @@ def process_connection(connection):
             'Content-Type': 'text/plain',
             'Content-Length': len(response_body)
         }
+
+        if encoding == 'gzip':
+            response_header['Content-Encoding'] = 'gzip'
+            response_body = gzip.compress(response_body.encode('utf-8'))
+
         connection.sendall(generate_response(200, response_header, response_body))
     else:
         connection.sendall(generate_response(404))
