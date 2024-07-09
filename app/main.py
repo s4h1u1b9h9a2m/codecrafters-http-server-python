@@ -2,6 +2,7 @@
 import socket
 import os
 from argparse import ArgumentParser
+import gzip
 
 FILE_DIR = None
 
@@ -40,11 +41,14 @@ def parse_request(request_data):
 
     print("headers:", headers) 
 
+    encoding = headers.get('Accept-Encoding')
+    print("encoding:", encoding)
+
     body = request_data[header_end + 4:]
 
     print("body:", body)
 
-    return method, path, headers, body
+    return method, path, headers, body, encoding
 
 def generate_response(status = 200, headers = None, body = None):
     if headers is None:
@@ -69,7 +73,7 @@ def generate_response(status = 200, headers = None, body = None):
 def process_connection(connection):
     request_data = fetch_request(connection)
 
-    method, path, headers, body = parse_request(request_data)
+    method, path, headers, body, encoding = parse_request(request_data)
 
     if not method or not path:
         return
@@ -82,6 +86,11 @@ def process_connection(connection):
             'Content-Type': 'text/plain',
             'Content-Length': len(response_body)
         }
+
+        if encoding == 'gzip':
+            response_header['Content-Encoding'] = 'gzip'
+            response_body = gzip.compress(response_body.encode('utf-8'))
+
         connection.sendall(generate_response(200, response_header, response_body))
     elif method == 'GET' and path.startswith('/files/'):
         response_body = path[7:]
